@@ -69,8 +69,8 @@ function getColorGauss(power, offset) {
 
 function getColor3(power) {
     var r = getColorGauss(power, powerMax);
-    var g = getColorGauss(power, (powerMax * 0.5));
-    var b = getColorGauss(power, (powerMax * 0.25));
+    var g = 0;//getColorGauss(power, (powerMax * 0));
+    var b = getColorGauss(power, (powerMax * 0.5));
     return [r,g,b];
 }
 
