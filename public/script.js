@@ -34,6 +34,46 @@ function generateMeasurements(numOfMeas, freqStep) {
     return m;
 }
 
+function getColor2(power) {
+	var r, g, b = 0;
+    var perc = (power / powerMax) * 100;
+    var factor = 7.72 * perc;
+	if(perc < 33) {
+	    b = 255;
+		g = Math.round(factor);
+	}
+	else if (perc < 66) {
+		g = 255;
+		b = Math.round(510 - factor);
+        r = Math.round(-255 + factor);
+	} else {
+        r = 255;
+        g = Math.round(772 - factor);
+    }
+
+    return [r,g,b];
+}
+
+function getColorGauss(power, offset) {
+    var max = 255;
+    var c = (powerMax - powerMin) / 5;
+    var center = powerMin + offset;
+
+    var top = Math.pow(power - center, 2);
+    var bot = Math.pow(2 * c, 2);
+    var exp = -1 * (top / bot);
+    var bell = Math.pow(Math.E, exp);
+    var color = max * bell;
+    return color;
+}
+
+function getColor3(power) {
+    var r = getColorGauss(power, powerMax);
+    var g = getColorGauss(power, (powerMax * 0.5));
+    var b = getColorGauss(power, (powerMax * 0.25));
+    return [r,g,b];
+}
+
 function scaleNumber(value, min, max, newMin, newMax) {
     var oldRange = (max - min);  
     var newRange = (newMax - newMin);  
@@ -54,11 +94,7 @@ function getColor(value) {
 }
 
 function setColors(freq, power, endFreq, imgData, row) {
-    var c = getColor(power);
-
-    if (!c) {
-        var x =0;
-    }
+    var c = getColor3(power);
 
     var startX = scaleFreq(freq);
     var ymax = row + step;
@@ -85,11 +121,17 @@ function setColors(freq, power, endFreq, imgData, row) {
     }
 }
 
+function addPower(power, startIndex, stopIndex) {
+    for(var i = startIndex; i < stopIndex; i++) {
+        powers[i] = Math.min(powerMax, powers[i] + power);
+    }
+}
+
 $(document).ready(function() {
     var ctx = $('#canvas')[0].getContext('2d');
-    var measurements = generateMeasurements(5000, 5);
+    var ctx2 = $('#canvas2')[0].getContext('2d');
     var imgData = ctx.createImageData(width, height);
-    console.log(imgData.data.length);
+    var imgData2 = ctx.createImageData(50, 2943);
 
     powerMin = 0;
     powerMax = 0;
@@ -98,11 +140,25 @@ $(document).ready(function() {
             powerMin = powers[i];
         }
 
-        if (powers[i] > powerMax) {
+        if (powerMax < powers[i]) {
             powerMax = powers[i];
         }
     }
+  
+    addPower(10000, 1200, 1800);
+    var measurements = generateMeasurements(5000, 5);
     
+    var pwr = powerMin;
+    for(var i = 0; i < imgData2.data.length; i+=4) {
+        var c = getColor3(pwr);
+        imgData2.data[i] = c[0];
+        imgData2.data[i+1] = c[1];
+        imgData2.data[i+2] = c[2];
+        imgData2.data[i+3] = 255;
+        pwr++;
+    }
+
+
     for (var i = 0; i < measurements.length; i++) {
         var entries = measurements[i][1];
         for (var j = 0; j < entries.length; j++) {
@@ -125,5 +181,6 @@ $(document).ready(function() {
         imgData.data[i+3] = 255;
     }*/
 
+    ctx2.putImageData(imgData2, 0, 0);
     ctx.putImageData(imgData, 0, 0);
 });
